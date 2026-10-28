@@ -12,6 +12,10 @@ vectorizer = joblib.load("vectorizer.pkl")
 def home():
     return jsonify({"message": "Spam Detection API is running!"})
 
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"message": "Spam Detection API is running!"})
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
@@ -27,11 +31,18 @@ def predict():
         # Predict
         prediction = model.predict(features)[0]
 
+        # Confidence score (only if the model supports it)
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            proba = model.predict_proba(features)[0]
+            confidence = float(proba[list(model.classes_).index(prediction)] * 100)
+
         result = "Ham Mail" if prediction == 1 else "Spam Mail"
 
         return jsonify({
             "input_message": message,
-            "prediction": result
+            "prediction": result,
+            "confidence": confidence
         })
 
     except Exception as e:
@@ -39,5 +50,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    # Run the app
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
